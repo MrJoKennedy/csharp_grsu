@@ -9,7 +9,6 @@ namespace CatAndMouse
         static void Main(string[] args)
         {
             // Тесты 1..3: файлы вида 1_ChaseData.txt -> 1_PursuitLog.txt
-            // (если у вас имена с точкой, как в задании, замените "_" на ".")
             for (int t = 1; t <= 3; t++)
             {
                 Game.InputFile = t + ".ChaseData.txt";
