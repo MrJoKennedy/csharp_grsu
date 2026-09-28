@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -70,7 +70,7 @@ namespace GeneticSearch
             {
                 while (!reader.EndOfStream)
                 {
-                    string line = reader.ReadLine();
+                    string? line = reader.ReadLine();
                     if (String.IsNullOrWhiteSpace(line)) continue;
 
                     string[] parts = line.Split('\t');
@@ -191,7 +191,7 @@ namespace GeneticSearch
 
                 while (!reader.EndOfStream)
                 {
-                    string line = reader.ReadLine();
+                    string? line = reader.ReadLine();
                     if (String.IsNullOrWhiteSpace(line)) continue;
 
                     string[] parts = line.Split('\t');
@@ -223,11 +223,82 @@ namespace GeneticSearch
             writer.WriteLine(Line);
         }
 
+        static string? ChooseFile(string title, string pattern)
+        {
+            string dir = Directory.GetCurrentDirectory();
+            List<string> files = new List<string>(Directory.GetFiles(dir, pattern));
+
+            if (files.Count == 0)
+                files = new List<string>(Directory.GetFiles(dir, "*.txt"));
+
+            files.Sort(StringComparer.OrdinalIgnoreCase);
+
+            while (true)
+            {
+                Console.WriteLine();
+                Console.WriteLine(title);
+
+                for (int i = 0; i < files.Count; i++)
+                    Console.WriteLine("  " + (i + 1) + ". " + Path.GetFileName(files[i]));
+
+                Console.WriteLine("  0. Enter path manually");
+                Console.Write("Your choice: ");
+
+                string? input = Console.ReadLine();
+                if (input == null) return null;
+                input = input.Trim();
+
+                if (input == "0")
+                {
+                    Console.Write("Path: ");
+                    string? path = Console.ReadLine();
+                    if (path == null) return null;
+                    path = path.Trim().Trim('"');
+
+                    if (File.Exists(path)) return path;
+                    Console.WriteLine("File not found.");
+                }
+                else if (int.TryParse(input, out int number) && number >= 1 && number <= files.Count)
+                {
+                    return files[number - 1];
+                }
+                else
+                {
+                    Console.WriteLine("Invalid choice, try again.");
+                }
+            }
+        }
+
         static void Main(string[] args)
         {
-            string sequencesFile = args.Length > 0 ? args[0] : "sequences.0.txt";
-            string commandsFile = args.Length > 1 ? args[1] : "commands.0.txt";
-            string outputFile = args.Length > 2 ? args[2] : "genedata.txt";
+            string? sequencesFile;
+            string? commandsFile;
+            string outputFile;
+
+            if (args.Length >= 2)
+            {
+                sequencesFile = args[0];
+                commandsFile = args[1];
+                outputFile = args.Length > 2 ? args[2] : "genedata.txt";
+            }
+            else
+            {
+                sequencesFile = ChooseFile("Select sequences file:", "sequences*.txt");
+                if (sequencesFile == null) return;
+
+                commandsFile = ChooseFile("Select commands file:", "commands*.txt");
+                if (commandsFile == null) return;
+
+                Console.Write("\nOutput file [genedata.txt]: ");
+                string? answer = Console.ReadLine();
+                outputFile = String.IsNullOrWhiteSpace(answer) ? "genedata.txt" : answer.Trim();
+            }
+
+            if (!File.Exists(sequencesFile) || !File.Exists(commandsFile))
+            {
+                Console.WriteLine("Input file not found.");
+                return;
+            }
 
             List<GeneticData> data = ReadData(sequencesFile);
 
@@ -237,6 +308,8 @@ namespace GeneticSearch
                 writer.WriteLine("Genetic Searching");
                 ProcessCommands(data, commandsFile, writer);
             }
+
+            Console.WriteLine("Done. Results written to " + outputFile);
         }
     }
 }
